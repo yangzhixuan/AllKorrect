@@ -36,9 +36,11 @@ static const int ALLOWED_SYSCALL[] =
 				SYS_set_tid_address, SYS_stat, SYS_uname, SYS_write, SYS_read,
 				SYS_mprotect, SYS_arch_prctl, SYS_munmap, SYS_clone };
 static const int ALLOWED_SYSCALL_LOOSE[] = { SYS_readlink,
-		SYS_openat/*Should Check it?*/, SYS_getdents,SYS_getgid,SYS_getegid,SYS_getuid,SYS_geteuid };
+		SYS_openat/*Should Check it?*/, SYS_getdents, SYS_getgid, SYS_getegid,
+		SYS_getuid, SYS_geteuid, SYS_setrlimit, SYS_lstat, SYS_vfork, SYS_wait4,
+		SYS_unlink, SYS_getpid };
 
-static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/","/lib64/", "/etc/", };
+static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/lib64/", "/etc/", };
 static const char* ALLOWED_OPEN_LOOSE[] = { "/proc/", "/sys/", "/tmp/" };
 
 static const struct Arg* arg;
@@ -178,6 +180,7 @@ static bool isLooseSyscallAllowed(int syscall) {
 			return true;
 		}
 	}
+	//ERR("Forbi: %d", syscall);
 	return false;
 }
 
@@ -409,9 +412,10 @@ void Init() {
 	struct group* nogroup = getgrnam("nogroup");
 	if (nogroup == NULL) {
 		ERR("Cannot find 'nogroup' let's find 'nobody' group.");
-		nogroup=getgrnam("nobody");
-		if(nogroup==NULL){
-			throw std::runtime_error("Cannot find 'nogroup' or 'nobody' group.");
+		nogroup = getgrnam("nobody");
+		if (nogroup == NULL) {
+			throw std::runtime_error(
+					"Cannot find 'nogroup' or 'nobody' group.");
 		}
 	}
 	NogroupGID = nogroup->gr_gid;
