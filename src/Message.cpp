@@ -12,6 +12,7 @@ static void recvAll(int sock, void* buf, size_t len) {
 			ERR("recv returned %d, cannot fill buffer.", cur);
 			throw std::runtime_error("");
 		}
+		DBG("recv returned %d",cur);
 		received += cur;
 	}
 }
