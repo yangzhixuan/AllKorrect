@@ -408,7 +408,11 @@ void Init() {
 
 	struct group* nogroup = getgrnam("nogroup");
 	if (nogroup == NULL) {
-		throw std::runtime_error("Cannot find 'nogroup'.");
+		ERR("Cannot find 'nogroup' let's find 'nobody' group.");
+		nogroup=getgrnam("nobody");
+		if(nogroup==NULL){
+			throw std::runtime_error("Cannot find 'nogroup' or 'nobody' group.");
+		}
 	}
 	NogroupGID = nogroup->gr_gid;
 	LOG("Got gid of nogroup=%d", NogroupGID);
