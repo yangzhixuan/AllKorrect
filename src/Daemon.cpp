@@ -103,7 +103,7 @@ void dealExec(int sock, std::string tmpDir, Message::Message& msg) {
 		break;
 	case Message::LOOSE:
 		arg.limit.limitSyscall = false;
-		arg.limit.processLimit = 20;
+		arg.limit.processLimit = 50;
 		break;
 	}
 

@@ -247,7 +247,6 @@ void CheckString(std::string str) {
 	for (char c : str) {
 		if (!('0' <= c && c <= '9' || 'a' <= c && c <= 'z'
 				|| 'A' <= c && c <= 'Z' || c == '-' || c == '_' || c == '.')) {
-			DBG("char is %c", c);
 			throw std::runtime_error("Invalid character in blob name");
 		}
 	}
