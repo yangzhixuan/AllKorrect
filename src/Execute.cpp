@@ -35,7 +35,7 @@ static const int ALLOWED_SYSCALL[] = { SYS_getxattr, SYS_access, SYS_brk,
 		SYS_set_thread_area, SYS_set_tid_address, SYS_stat, SYS_uname,
 		SYS_write, SYS_read, SYS_mprotect, SYS_arch_prctl, SYS_munmap,
 		SYS_clone, SYS_readlink, SYS_getgid, SYS_getegid, SYS_getuid,
-		SYS_geteuid, SYS_fcntl, SYS_getdents, SYS_lstat, SYS_lseek };
+		SYS_geteuid, SYS_fcntl, SYS_getdents, SYS_lstat, SYS_lseek,SYS_getcwd };
 static const int ALLOWED_SYSCALL_LOOSE[] =
 		{ SYS_openat/*Should Check it?*/, SYS_setrlimit, SYS_vfork, SYS_wait4,
 				SYS_unlink, SYS_getpid, SYS_writev };
