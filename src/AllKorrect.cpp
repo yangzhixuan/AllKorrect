@@ -12,7 +12,7 @@
 #error "AllKorrect is designed for x64 only"
 #endif
 
-int main(void) {
+void Main() {
 	LOG("AllKorrect Starting up");
 	LOG("My uid=%d euid=%d gid=%d egid=%d",
 			getuid(), geteuid(), getgid(), getegid());
@@ -29,32 +29,41 @@ int main(void) {
 
 	Daemon::Run();
 	//FileSystem::RecursiveRemove("/var/cache/allkorrect");
-/*
-	const char* cmd = "./test";
-	char* const argv[] = { (char*) cmd, "Main", NULL };
-	struct Execute::Arg arg;
-	arg.command = cmd;
-	arg.argv = argv;
-	arg.cwd = "/home/phone";
-	arg.inputFile = "/dev/null";
-	arg.outputFile = "/tmp/out";
-	arg.errorFile = "/tmp/err";
-	arg.uid = Execute::NobodyUID;
-	arg.gid = Execute::NogroupGID;
-	arg.limit.memoryLimit = 1024 * 1024 * 1024;
-	arg.limit.timeLimit = 2000;
-	arg.limit.outputLimit = 100 * 1024 * 1024;
-	arg.limit.processLimit = 1;
-	arg.limit.limitSyscall = true;
+	/*
+	 const char* cmd = "./test";
+	 char* const argv[] = { (char*) cmd, "Main", NULL };
+	 struct Execute::Arg arg;
+	 arg.command = cmd;
+	 arg.argv = argv;
+	 arg.cwd = "/home/phone";
+	 arg.inputFile = "/dev/null";
+	 arg.outputFile = "/tmp/out";
+	 arg.errorFile = "/tmp/err";
+	 arg.uid = Execute::NobodyUID;
+	 arg.gid = Execute::NogroupGID;
+	 arg.limit.memoryLimit = 1024 * 1024 * 1024;
+	 arg.limit.timeLimit = 2000;
+	 arg.limit.outputLimit = 100 * 1024 * 1024;
+	 arg.limit.processLimit = 1;
+	 arg.limit.limitSyscall = true;
 
-	struct Execute::Result result;
-	Execute::Execute(&arg, &result);
-	DBG("exitStatus:%d", result.exitStatus);
-	DBG("type:%d", result.type);
-	DBG("time:%d", result.time);
-	DBG("memory:%lld", result.memory);
-*/
+	 struct Execute::Result result;
+	 Execute::Execute(&arg, &result);
+	 DBG("exitStatus:%d", result.exitStatus);
+	 DBG("type:%d", result.type);
+	 DBG("time:%d", result.time);
+	 DBG("memory:%lld", result.memory);
+	 */
 
 	LOG("AllKorrect stopped.");
+}
+
+int main(void) {
+	try {
+		Main();
+	} catch (std::runtime_error& e) {
+		ERR("Main Caught: %s", e.what());
+		perror(NULL);
+	}
 	return EXIT_SUCCESS;
 }

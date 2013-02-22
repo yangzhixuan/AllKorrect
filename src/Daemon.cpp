@@ -327,11 +327,11 @@ void Run() {
 			struct timeval timeout;
 			timeout.tv_sec = 5;
 			timeout.tv_usec = 0;
-			if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+			if (setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout,
 					sizeof(timeout)) < 0) {
 				throw std::runtime_error("Cannot set recv timeout");
 			}
-			if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+			if (setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &timeout,
 					sizeof(timeout)) < 0) {
 				throw std::runtime_error("Cannot set send timeout");
 			}
@@ -339,6 +339,7 @@ void Run() {
 		} catch (std::runtime_error& e) {
 			if (*e.what()) {
 				ERR("%s", e.what());
+				perror(NULL);
 			}
 		} catch (...) {
 			ERR("Unkown exception throwed");
