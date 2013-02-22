@@ -38,7 +38,7 @@ static const int ALLOWED_SYSCALL[] =
 static const int ALLOWED_SYSCALL_LOOSE[] = { SYS_readlink,
 		SYS_openat/*Should Check it?*/, SYS_getdents,SYS_getgid,SYS_getegid,SYS_getuid,SYS_geteuid };
 
-static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/etc/", };
+static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/","/lib64/", "/etc/", };
 static const char* ALLOWED_OPEN_LOOSE[] = { "/proc/", "/sys/", "/tmp/" };
 
 static const struct Arg* arg;
