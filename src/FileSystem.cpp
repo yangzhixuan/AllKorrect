@@ -171,7 +171,7 @@ bool HasBlob(std::string file) {
 }
 
 void PutBlob(std::string name, const char* buf, size_t len) {
-	int fd = open(name.c_str(), O_CREAT | O_WRONLY, 0700);
+	int fd = open(name.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0700);
 	if (fd < 0) {
 		throw std::runtime_error("put blob open failure");
 	}
@@ -279,7 +279,8 @@ void CleanBlobs() {
 					throw std::runtime_error("Cannot get stat");
 				}
 				double passedSec = difftime(now,
-						std::max(sts.st_atime, std::max(sts.st_ctime, sts.st_mtime)));
+						std::max(sts.st_atime,
+								std::max(sts.st_ctime, sts.st_mtime)));
 				if (passedSec > MIN_DELETION_TIME) {
 					if (file->d_name[0] == '_') {
 						tmpTotSize += sts.st_size;
@@ -297,7 +298,7 @@ void CleanBlobs() {
 		}
 	}
 
-	int count=0;
+	int count = 0;
 
 	for (std::pair<off_t, std::string>& p : tmp) {
 		TryDelete(p.second);
@@ -316,8 +317,8 @@ void CleanBlobs() {
 		}
 	}
 
-	if(count>0){
-		LOG("Just cleaned %d blobs",count);
+	if (count > 0) {
+		LOG("Just cleaned %d blobs", count);
 	}
 }
 

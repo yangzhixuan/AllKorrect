@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include "Log.h"
+#include "FileSystem.h"
 
 namespace Execute {
 static const double REALTIME_RATE = 1.5;
@@ -33,12 +34,12 @@ static const int ALLOWED_SYSCALL[] = { SYS_getxattr, SYS_access, SYS_brk,
 		SYS_getrlimit, SYS_ioctl, SYS_ioperm, SYS_mmap, SYS_open,
 		SYS_rt_sigaction, SYS_rt_sigprocmask, SYS_set_robust_list,
 		SYS_set_thread_area, SYS_set_tid_address, SYS_stat, SYS_uname,
-		SYS_write, SYS_read, SYS_mprotect, SYS_arch_prctl, SYS_munmap,
-		SYS_clone, SYS_readlink, SYS_getgid, SYS_getegid, SYS_getuid,
-		SYS_geteuid, SYS_fcntl, SYS_getdents, SYS_lstat, SYS_lseek,SYS_getcwd };
-static const int ALLOWED_SYSCALL_LOOSE[] =
-		{ SYS_openat/*Should Check it?*/, SYS_setrlimit, SYS_vfork, SYS_wait4,
-				SYS_unlink, SYS_getpid, SYS_writev };
+		SYS_write, SYS_read, SYS_mprotect, SYS_arch_prctl, SYS_munmap, SYS_fork,
+		SYS_vfork, SYS_clone, SYS_readlink, SYS_getgid, SYS_getegid, SYS_getuid,
+		SYS_geteuid, SYS_fcntl, SYS_getdents, SYS_lstat, SYS_lseek, SYS_getcwd,
+		SYS_time };
+static const int ALLOWED_SYSCALL_LOOSE[] = { SYS_openat/*Should Check it?*/,
+		SYS_setrlimit, SYS_wait4, SYS_unlink, SYS_getpid, SYS_writev };
 
 static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/lib64/", "/etc/",
 		"/proc/" };
@@ -205,13 +206,21 @@ static std::string peekString(pid_t pid, char*addr) {
 	}
 }
 
+static bool beginWith(std::string str, std::string prefix) {
+	return prefix.size() <= str.size() && str.substr(0, prefix.size()) == prefix;
+}
+
 static bool checkOpen(std::string path) {
 	//Just in the work directory
-	if (path.find('/') == std::string::npos)
+	if (!path.empty() && *path.begin() != '/'
+			&& path.find("..") == std::string::npos)
 		return true;
+	if (beginWith(path, FileSystem::Root)
+			&& path.find("..") == std::string::npos)
+		return true;
+
 	for (const char* allowed : ALLOWED_OPEN) {
-		if (strlen(allowed) <= path.size()
-				&& path.substr(0, strlen(allowed)) == allowed)
+		if (beginWith(path, allowed))
 			return true;
 	}
 	return false;
@@ -219,8 +228,7 @@ static bool checkOpen(std::string path) {
 
 static bool checkLooseOpen(std::string path) {
 	for (const char* allowed : ALLOWED_OPEN_LOOSE) {
-		if (strlen(allowed) <= path.size()
-				&& path.substr(0, strlen(allowed)) == allowed)
+		if (beginWith(path, allowed))
 			return true;
 	}
 	return false;
