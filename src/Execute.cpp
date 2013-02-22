@@ -28,15 +28,18 @@ enum executeError {
 	ERR_INVALID_SYSCALL, ERR_MLE
 };
 
-static const int ALLOWED_SYSCALL[] = { SYS_getxattr, SYS_access, SYS_brk,
-		SYS_close, SYS_execve, SYS_exit_group, SYS_fstat, SYS_futex,
-		SYS_getrlimit, SYS_ioctl, SYS_ioperm, SYS_mmap, SYS_open, SYS_read,
-		SYS_rt_sigaction, SYS_rt_sigprocmask, SYS_set_robust_list,
-		SYS_set_thread_area, SYS_set_tid_address, SYS_stat, SYS_uname,
-		SYS_write, SYS_read, SYS_mprotect, SYS_arch_prctl, SYS_munmap,
-		SYS_clone, -1 };
+static const int ALLOWED_SYSCALL[] =
+		{ SYS_getxattr, SYS_access, SYS_brk, SYS_close, SYS_execve,
+				SYS_exit_group, SYS_fstat, SYS_futex, SYS_getrlimit, SYS_ioctl,
+				SYS_ioperm, SYS_mmap, SYS_open, SYS_rt_sigaction,
+				SYS_rt_sigprocmask, SYS_set_robust_list, SYS_set_thread_area,
+				SYS_set_tid_address, SYS_stat, SYS_uname, SYS_write, SYS_read,
+				SYS_mprotect, SYS_arch_prctl, SYS_munmap, SYS_clone };
+static const int ALLOWED_SYSCALL_LOOSE[] = { SYS_readlink,
+		SYS_openat/*Should Check it?*/, SYS_getdents,SYS_getgid,SYS_getegid,SYS_getuid,SYS_geteuid };
 
-static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/","/etc/" };
+static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/etc/", };
+static const char* ALLOWED_OPEN_LOOSE[] = { "/proc/", "/sys/", "/tmp/" };
 
 static const struct Arg* arg;
 static struct Result* result;
@@ -161,13 +164,21 @@ static void killTree(pid_t pid) {
 }
 
 static bool isSyscallAllowed(int syscall) {
-	const int *callno;
-	for (callno = ALLOWED_SYSCALL; *callno >= 0; callno++) {
-		if (*callno == syscall) {
-			return 1;
+	for (int callno : ALLOWED_SYSCALL) {
+		if (callno == syscall) {
+			return true;
 		}
 	}
-	return 0;
+	return false;
+}
+
+static bool isLooseSyscallAllowed(int syscall) {
+	for (int callno : ALLOWED_SYSCALL_LOOSE) {
+		if (callno == syscall) {
+			return true;
+		}
+	}
+	return false;
 }
 
 static std::string peekString(pid_t pid, char*addr) {
@@ -199,6 +210,15 @@ static bool checkOpen(std::string path) {
 	return false;
 }
 
+static bool checkLooseOpen(std::string path) {
+	for (const char* allowed : ALLOWED_OPEN_LOOSE) {
+		if (strlen(allowed) <= path.size()
+				&& path.substr(0, strlen(allowed)) == allowed)
+			return true;
+	}
+	return false;
+}
+
 static bool checkSyscall(pid_t pid) {
 	struct user_regs_struct regs;
 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
@@ -216,7 +236,9 @@ static bool checkSyscall(pid_t pid) {
 	 }
 	 */
 
-	if (arg->limit.limitSyscall && !isSyscallAllowed(syscall)) {
+	if (arg->limit.limitSyscall && !isSyscallAllowed(syscall)
+			|| !arg->limit.limitSyscall && !isSyscallAllowed(syscall)
+					&& !isLooseSyscallAllowed(syscall)) {
 		ERR("Caught forbidden syscall %ld", syscall);
 		errno = ERR_INVALID_SYSCALL;
 		return 0;
@@ -226,7 +248,9 @@ static bool checkSyscall(pid_t pid) {
 	switch (syscall) {
 	case SYS_open:
 		openingFile = peekString(pid, (char*) regs.rdi);
-		if (arg->limit.limitSyscall && !checkOpen(openingFile)) {
+		if (arg->limit.limitSyscall && !checkOpen(openingFile)
+				|| !arg->limit.limitSyscall && !checkOpen(openingFile)
+						&& !checkLooseOpen(openingFile)) {
 			ERR("Caught opening forbidden file %s", openingFile.c_str());
 			errno = ERR_INVALID_SYSCALL;
 			return false;
@@ -268,8 +292,6 @@ static void parentLoop(pid_t pid) {
 		//Wait for my child
 		wait4(pid, &status, 0, &rusage);
 
-		DBG("Wait4 returned. status=%d", status);
-
 		if (result->type != UNKNOWN) {
 			assert(WIFEXITED(status) || WIFSIGNALED(status));
 			return;
@@ -294,7 +316,7 @@ static void parentLoop(pid_t pid) {
 			return;
 		} else if (WIFSIGNALED(status)) {
 			//assert(WTERMSIG(status)==SIGKILL);
-			result->exitStatus = CRASHED;
+			result->type = CRASHED;
 			result->exitStatus = WTERMSIG(status);
 			return;
 		} else if (WIFSTOPPED(status)) {

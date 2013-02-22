@@ -18,7 +18,7 @@
 #include "BinaryStream.h"
 
 namespace Daemon {
-static const short PORT = 10086;
+static const short PORT = 10010;
 static const int MAX_PENDING = 5;
 
 static bool Running;
@@ -43,39 +43,51 @@ void Init() {
 void dealExec(int sock, std::string tmpDir, Message::Message& msg) {
 	Message::MsgExec exec = Message::ToMsgExec(msg);
 
-	FileSystem::CheckString(exec.input);
-	if (!FileSystem::HasBlob(FileSystem::Root + exec.input)) {
-		throw std::runtime_error("Input blob not found");
+	//Input
+	bool hasInput = !exec.input.empty();
+	if (hasInput) {
+		FileSystem::CheckString(exec.input);
+		if (!FileSystem::HasBlob(FileSystem::Root + exec.input)) {
+			throw std::runtime_error("Input blob not found");
+		}
+		exec.input = FileSystem::Root + exec.input;
+		FileSystem::SetBlobReadOnly(exec.input);
 	}
-	exec.input = FileSystem::Root + exec.input;
+
+	//Output and Error
 	std::string out = FileSystem::RandString(), err = FileSystem::RandString();
 	std::string output = FileSystem::Root + out, error = FileSystem::Root + err;
 	FileSystem::NewBlob(output);
 	FileSystem::NewBlob(error);
-	FileSystem::SetBlobReadOnly(exec.input);
 	FileSystem::SetBlobWriteOnly(output);
 	FileSystem::SetBlobWriteOnly(error);
 	Defer restorePermissions([=]() {
-		FileSystem::RestoreBlobPermission(exec.input);
+		if(hasInput) {
+			FileSystem::RestoreBlobPermission(exec.input);
+		}
 		FileSystem::RestoreBlobPermission(output);
 		FileSystem::RestoreBlobPermission(error);
 	});
 
 	std::vector<char*> argv;
-	std::string cmdLine=exec.cmd;
+	std::string cmdLine = exec.cmd;
 	argv.push_back((char*) exec.cmd.c_str());
 	for (int i = 0; i < exec.argc; i++) {
 		argv.push_back(const_cast<char*>(exec.arg[i].c_str()));
-		cmdLine+=" "+exec.arg[i];
+		cmdLine += " " + exec.arg[i];
 	}
-	LOG("EXEC %s",cmdLine.c_str());
+	LOG("EXEC %s", cmdLine.c_str());
 	argv.push_back(NULL);
 
 	Execute::Arg arg;
 	arg.command = exec.cmd.c_str();
 	arg.cwd = tmpDir.c_str();
 	arg.argv = &argv[0];
-	arg.inputFile = exec.input.c_str();
+	if (hasInput) {
+		arg.inputFile = exec.input.c_str();
+	} else {
+		arg.inputFile = "/dev/null";
+	}
 	arg.outputFile = output.c_str();
 	arg.errorFile = error.c_str();
 	arg.gid = Execute::NogroupGID;
@@ -91,7 +103,7 @@ void dealExec(int sock, std::string tmpDir, Message::Message& msg) {
 		break;
 	case Message::LOOSE:
 		arg.limit.limitSyscall = false;
-		arg.limit.processLimit = -1;
+		arg.limit.processLimit = 20;
 		break;
 	}
 
@@ -109,7 +121,7 @@ void dealExec(int sock, std::string tmpDir, Message::Message& msg) {
 
 void dealPutBlob(int sock, std::string tmpDir, Message::Message& msg) {
 	Message::MsgPutBlob putBlob = Message::ToMsgPutBlob(msg);
-	LOG("PUT_BLOB %s",putBlob.name.c_str());
+	LOG("PUT_BLOB %s", putBlob.name.c_str());
 	FileSystem::CheckString(putBlob.name);
 	FileSystem::PutBlob(FileSystem::Root + putBlob.name, putBlob.buf,
 			putBlob.len);
@@ -121,7 +133,7 @@ void dealPutBlob(int sock, std::string tmpDir, Message::Message& msg) {
 
 void dealGetBlob(int sock, std::string tmpDir, Message::Message& msg) {
 	Message::MsgGetBlob getBlob = Message::ToMsgGetBlob(msg);
-	LOG("GET_BLOB %s",getBlob.name.c_str());
+	LOG("GET_BLOB %s", getBlob.name.c_str());
 	FileSystem::CheckString(getBlob.name);
 	if (!FileSystem::HasBlob(FileSystem::Root + getBlob.name)) {
 		throw std::runtime_error("Blob not exists");
@@ -147,42 +159,42 @@ void dealCopyMove(int sock, std::string tmpDir, Message::Message& msg,
 	Message::Send(sock, reply);
 }
 
-void dealHasBlob(int sock,std::string tmpDir,Message::Message& msg){
+void dealHasBlob(int sock, std::string tmpDir, Message::Message& msg) {
 	BinaryStream stream(msg.body);
 	std::string name;
-	stream>>name;
-	LOG("HAS_BLOB %s",name.c_str());
+	stream >> name;
+	LOG("HAS_BLOB %s", name.c_str());
 	FileSystem::CheckString(name);
 	Message::Message reply;
 	BinaryStream buf;
-	if(FileSystem::HasBlob(FileSystem::Root+name)){
-		buf<<(int)1;
-	}else{
-		buf<<(int)0;
+	if (FileSystem::HasBlob(FileSystem::Root + name)) {
+		buf << (int) 1;
+	} else {
+		buf << (int) 0;
 	}
-	reply.type=Message::HAS_BLOB_REPLY;
-	reply.body=buf.buffer;
-	reply.size=reply.body.size();
-	Message::Send(sock,reply);
+	reply.type = Message::HAS_BLOB_REPLY;
+	reply.body = buf.buffer;
+	reply.size = reply.body.size();
+	Message::Send(sock, reply);
 }
 
-void dealHasFile(int sock,std::string tmpDir,Message::Message& msg){
+void dealHasFile(int sock, std::string tmpDir, Message::Message& msg) {
 	BinaryStream stream(msg.body);
 	std::string name;
-	stream>>name;
-	LOG("HAS_FILE %s",name.c_str());
+	stream >> name;
+	LOG("HAS_FILE %s", name.c_str());
 	FileSystem::CheckString(name);
 	Message::Message reply;
 	BinaryStream buf;
-	if(FileSystem::HasBlob(tmpDir+name)){
-		buf<<(int)1;
-	}else{
-		buf<<(int)0;
+	if (FileSystem::HasBlob(tmpDir + name)) {
+		buf << (int) 1;
+	} else {
+		buf << (int) 0;
 	}
-	reply.type=Message::HAS_FILE_REPLY;
-	reply.body=buf.buffer;
-	reply.size=reply.body.size();
-	Message::Send(sock,reply);
+	reply.type = Message::HAS_FILE_REPLY;
+	reply.body = buf.buffer;
+	reply.size = reply.body.size();
+	Message::Send(sock, reply);
 }
 
 std::string toFullBlob(std::string a) {
@@ -225,10 +237,10 @@ void serve(int sock) {
 			dealGetBlob(sock, tmpDir, msg);
 			break;
 		case Message::HAS_BLOB:
-			dealHasBlob(sock,tmpDir,msg);
+			dealHasBlob(sock, tmpDir, msg);
 			break;
 		case Message::HAS_FILE:
-			dealHasFile(sock,tmpDir,msg);
+			dealHasFile(sock, tmpDir, msg);
 			break;
 		case Message::MOVE_BLOB2FILE:
 			dealCopyMove(sock, tmpDir, msg, FileSystem::MoveBlob2File,

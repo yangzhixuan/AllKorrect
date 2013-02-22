@@ -6,6 +6,7 @@ extern std::string Root;
 extern void Init();
 extern std::string RandString();
 extern void RecursiveRemove(std::string dirname);
+extern void RemoveSubDirs(std::string dirname);
 extern std::string NewTmpDir();
 extern void NewBlob(std::string path);
 extern void SetBlobReadOnly(std::string file);
@@ -26,4 +27,6 @@ extern void CopyBlob2File(std::string blob,std::string file);
 extern void CopyBlob2Blob(std::string,std::string);
 extern void CopyFile2Blob(std::string,std::string);
 extern void CopyFile2File(std::string,std::string);
+
+extern void CleanBlobs();
 }
