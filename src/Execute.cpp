@@ -40,8 +40,8 @@ static const int ALLOWED_SYSCALL_LOOSE[] = { SYS_readlink,
 		SYS_getuid, SYS_geteuid, SYS_setrlimit, SYS_lstat, SYS_vfork, SYS_wait4,
 		SYS_unlink, SYS_getpid, SYS_writev };
 
-static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/lib64/", "/etc/", };
-static const char* ALLOWED_OPEN_LOOSE[] = { "/proc/", "/sys/", "/tmp/" };
+static const char* ALLOWED_OPEN[] = { "/usr/", "/lib/", "/lib64/", "/etc/", "/proc/"};
+static const char* ALLOWED_OPEN_LOOSE[] = {  "/sys/", "/tmp/" };
 
 static const struct Arg* arg;
 static struct Result* result;
@@ -180,8 +180,8 @@ static bool isLooseSyscallAllowed(int syscall) {
 			return true;
 		}
 	}
-	ERR("Forbi: %d", syscall);
-	return true;
+	//ERR("Forbi: %d", syscall);
+	return false;
 }
 
 static std::string peekString(pid_t pid, char*addr) {
