@@ -44,7 +44,7 @@ all: AllKorrect
 AllKorrect: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -static -o "AllKorrect" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o "AllKorrect" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

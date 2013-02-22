@@ -12,7 +12,7 @@ static void recvAll(int sock, void* buf, size_t len) {
 			ERR("recv returned %d, cannot fill buffer.", cur);
 			throw std::runtime_error("");
 		}
-		DBG("recv returned %d",cur);
+		//DBG("recv returned %d",cur);
 		received += cur;
 	}
 }
@@ -30,7 +30,7 @@ Message Next(int sock){
 	result.type=*(Type*)buf;
 	result.size=*(uint8_t*)(buf+4);
 
-	DBG("Just recved type=%d size=%u\n",result.type,result.size);
+	//DBG("Just recved type=%d size=%u\n",result.type,result.size);
 
 	if(result.size>MAX_BODY_SIZE){
 		throw std::runtime_error("Received message body too large");
@@ -38,7 +38,7 @@ Message Next(int sock){
 
 	result.body.resize(result.size);
 	recvAll(sock,&result.body[0],result.size);
-	DBG("Finished a msg");
+	//DBG("Finished a msg");
 	return result;
 }
 
