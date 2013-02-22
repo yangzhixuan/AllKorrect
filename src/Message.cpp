@@ -29,12 +29,15 @@ Message Next(int sock){
 	result.type=*(Type*)buf;
 	result.size=*(uint8_t*)(buf+4);
 
+	DBG("Just recved type=%d size=%u\n",result.type,result.size);
+
 	if(result.size>MAX_BODY_SIZE){
 		throw std::runtime_error("Received message body too large");
 	}
 
 	result.body.resize(result.size);
 	recvAll(sock,&result.body[0],result.size);
+	DBG("Finished a msg");
 	return result;
 }
 
