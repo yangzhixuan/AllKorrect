@@ -324,6 +324,13 @@ void Run() {
 				inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 
 		try {
+			struct timeval timeout;
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;
+			setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+					sizeof(timeout));
+			setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+					sizeof(timeout));
 			serve(client);
 		} catch (std::runtime_error& e) {
 			if (*e.what()) {
